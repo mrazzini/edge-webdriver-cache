@@ -1,7 +1,8 @@
 name: Run Driver Download Test
 
 on:
-  push: # This action runs whenever you push a change to the repo
+  push:
+  workflow_dispatch: # Allows manual trigger for testing
 
 jobs:
   download-drivers:
@@ -17,13 +18,33 @@ jobs:
           python-version: '3.10'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run download script
-        run: |
-          python download_driver.py
+        run: python download_driver.py
 
-      - name: List downloaded files
+      - name: Check for new drivers
+        id: check_files
         run: |
-          ls -l webdrivers/
+          # Count new files in the webdrivers directory
+          NEW_FILES=$(find webdrivers/ -type f -mmin -1 | wc -l)
+          echo "Found $NEW_FILES new drivers to commit."
+          # Set an output variable to use in the next step
+          echo "::set-output name=has_updates::$( [ $NEW_FILES -gt 0 ] && echo 'true' || echo 'false' )"
+      
+      - name: Commit and push changes
+        # This step only runs if new files were found
+        if: steps.check_files.outputs.has_updates == 'true'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add webdrivers/
+          git commit -m "Automated update of msedgedriver"
+          git push
+          echo "✅ Successfully pushed new driver files."
+        
+      - name: No new drivers
+        # This step runs if no changes were found
+        if: steps.check_files.outputs.has_updates == 'false'
+        run: |
+          echo "ℹ️ No new drivers found. Skipping commit."
