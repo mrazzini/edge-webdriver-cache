@@ -6,23 +6,16 @@ from webdriver_manager.microsoft import EdgeChromiumDriverManager
 def get_recent_versions(base_url, num_versions=3):
     """
     Fetches a list of recent driver versions from a given URL.
-    This is an advanced feature and might require specific API knowledge.
-    As a simpler alternative, we'll manually list a few recent versions.
     """
-    # A simplified, reliable approach is to use the known version structure.
-    # We can fetch the latest, then try a few decremented versions.
     try:
         latest_version = requests.get(f"{base_url}/LATEST_RELEASE").text.strip()
         versions = [latest_version]
         
-        # Simple heuristic to get a few previous major versions
-        # This is not guaranteed to work for all releases
         major_version = int(latest_version.split('.')[0])
         for i in range(1, num_versions):
             prev_major = major_version - i
             if prev_major > 0:
                 try:
-                    # Attempt to get the latest release for the previous major version
                     prev_version = requests.get(f"{base_url}/LATEST_RELEASE_{prev_major}").text.strip()
                     versions.append(prev_version)
                 except requests.exceptions.RequestException:
@@ -34,8 +27,13 @@ def get_recent_versions(base_url, num_versions=3):
 
 def download_and_store_drivers():
     """
-    Downloads the latest msedgedriver.exe and a few recent past versions.
+    Downloads the latest msedgedriver.exe and a few recent past versions
+    into a dedicated 'webdrivers' folder.
     """
+    webdrivers_folder = "webdrivers"
+    # Create the folder if it doesn't exist
+    os.makedirs(webdrivers_folder, exist_ok=True)
+    
     base_url = "https://msedgedriver.azureedge.net"
     versions_to_download = get_recent_versions(base_url, num_versions=3)
     
@@ -54,10 +52,13 @@ def download_and_store_drivers():
             # Create a new filename with the version number embedded
             destination_filename = f"msedgedriver_{version}.exe"
             
-            # Copy the downloaded driver to the target location
-            shutil.copy(driver_path, destination_filename)
+            # Define the full destination path inside the new folder
+            destination_path = os.path.join(webdrivers_folder, destination_filename)
             
-            print(f"✅ Driver version {version} successfully copied to {destination_filename}")
+            # Copy the downloaded driver to the target location
+            shutil.copy(driver_path, destination_path)
+            
+            print(f"✅ Driver version {version} successfully copied to {destination_path}")
             
         except Exception as e:
             print(f"❌ Failed to download driver for version {version}: {e}")
