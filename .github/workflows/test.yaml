@@ -1,0 +1,29 @@
+name: Run Driver Download Test
+
+on:
+  push: # This action runs whenever you push a change to the repo
+
+jobs:
+  download-drivers:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run download script
+        run: |
+          python download_driver.py
+
+      - name: List downloaded files
+        run: |
+          ls -l webdrivers/
